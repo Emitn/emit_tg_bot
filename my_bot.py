@@ -1,41 +1,34 @@
 import os
 import requests
 from dotenv import load_dotenv
-import time
+from aiogram import Bot, Dispatcher
+from aiogram.filters import Command
+from aiogram.types import Message
 
 load_dotenv()
-
-API_URL = os.getenv('API_URL')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
-API_CATS_URL = "https://api.thecatapi.com/v1/images/search"
-ERROR_TEXT = "NO_CAT"
 
-TEXT = "Nice update"
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
 
-MAX_COUNTER = 100
+async def process_waifu_command(message: Message):
+    waifu_response = requests.get("https://api.waifu.im/search")
+    await message.answer(text=f"{waifu_response.json()['images'][0]['preview_url']}")
 
-offset: int = -2
-counter: int = 0
-chat_id: int
-cat_response: requests.Response
-cat_link: str
+async def process_start_command(message: Message):
+    await message.answer("Hi, I am echo and i have many cats")
+
+async def process_help_command(message: Message):
+    await message.answer("Send me anything and I'll repeat after you")
 
 
-while counter < MAX_COUNTER:
-    print(f"attempt={counter}")
-    updates = requests.get(f"{API_URL}{BOT_TOKEN}/getUpdates?offset={offset + 1}&timeout=60").json()
+async  def process_message(message: Message):
+    await message.reply(message.text)
 
-    if updates["result"]:
-        for result in updates["result"]:
-            offset = result["update_id"]
-            chat_id = result["message"]["from"]["id"]
-            cat_response = requests.get(API_CATS_URL)
-            if cat_response.status_code == 200:
-                cat_link = cat_response.json()[0]["url"]
-                echo_message = f"{result["message"]["text"]} is nice, but cat photo is better"
-                requests.get(f"{API_URL}{BOT_TOKEN}/sendMessage?chat_id={chat_id}&text={echo_message}")
-                requests.get(f"{API_URL}{BOT_TOKEN}/sendPhoto?chat_id={chat_id}&photo={cat_link}")
-            else:
-                requests.get(f"{API_URL}{BOT_TOKEN}/sendMessage?chat_id={chat_id}&text={ERROR_TEXT}")
-    time.sleep(1)
-    counter += 1
+
+if __name__ == "__main__":
+    dp.message.register(process_start_command, Command(commands="start"))
+    dp.message.register(process_help_command, Command(commands="help"))
+    dp.message.register(process_waifu_command, Command(commands="waifu"))
+    dp.message.register(process_message)
+    dp.run_polling(bot)
