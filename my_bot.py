@@ -21,17 +21,16 @@ async def process_start_command(message: Message):
 async def process_help_command(message: Message):
     await message.answer("Send me anything and I'll repeat after you")
 
-async def process_photo(message: Message):
-    await message.reply_photo(message.photo[0].file_id)
-
 async  def process_message(message: Message):
-    await message.reply(message.text)
+    try:
+        await message.send_copy(chat_id=message.chat.id)
+    except TypeError:
+        await message.reply(text="TypeError")
 
 
 if __name__ == "__main__":
     dp.message.register(process_start_command, Command(commands="start"))
     dp.message.register(process_help_command, Command(commands="help"))
     dp.message.register(process_waifu_command, Command(commands="waifu"))
-    dp.message.register(process_photo, F.content_type == ContentType.PHOTO)
     dp.message.register(process_message)
     dp.run_polling(bot)
