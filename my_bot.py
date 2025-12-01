@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import requests
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.filters import Command
+from aiogram.filters import Command, BaseFilter
 from aiogram.types import Message, ContentType
 
 from random import randint
@@ -17,15 +17,31 @@ dp = Dispatcher()
 ATTEMPTS = 5
 
 users = {}
+admins: list[int] = [294655078]
 
+class IsAdmin(BaseFilter):
+    def __init__(self, admin_ids: list[int]):
+        self.admin_ids = admin_ids
+
+    async  def __call__(self, message: Message):
+        return message.from_user.id in self.admin_ids
 
 def add_new_user(users_dict, user_id: int):
     if user_id not in users_dict:
+        print(user_id)
         users_dict[user_id] = {"in_game" : False,
                                "secret_number" : None,
                                "attempts" : None,
                                "games" : 0,
                                "wins": 0}
+
+@dp.message(Command(commands="admin") and IsAdmin(admins))
+async def process_admin_command(message: Message):
+    await message.answer("Hi, admin")
+
+@dp.message(Command(commands="admin"))
+async def process_admin_command_by_imposter(message: Message):
+    await message.answer("You are not admin")
 
 @dp.message(Command(commands="waifu"))
 async def process_waifu_command(message: Message):
