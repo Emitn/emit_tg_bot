@@ -1,6 +1,7 @@
 import os
-from dotenv import load_dotenv
 import requests
+
+from environs import Env
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command, BaseFilter
@@ -8,22 +9,32 @@ from aiogram.types import Message, ContentType
 
 from random import randint
 
-load_dotenv()
-BOT_TOKEN = os.getenv('BOT_TOKEN')
+import logging
 
-bot = Bot(token=BOT_TOKEN)
+logging.basicConfig(level=logging.DEBUG,
+                    format='[{asctime}] #{levelname:8} {filename}:''{lineno} - {name} - {message}',
+                    style='{')
+logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler("logs.log")
+logger.addHandler(file_handler)
+
+env = Env()
+env.read_env()
+
+bot = Bot(token=env("BOT_TOKEN"))
+admins: list[int] = [env.int("ADMIN_ID")]
 dp = Dispatcher()
 
 ATTEMPTS = 5
 
 users = {}
-admins: list[int] = [294655078]
+
 
 class IsAdmin(BaseFilter):
-    def __init__(self, admin_ids: list[int]):
+    def __init__(self, admin_ids: list[int]) -> None:
         self.admin_ids = admin_ids
 
-    async  def __call__(self, message: Message):
+    async  def __call__(self, message: Message) -> bool:
         return message.from_user.id in self.admin_ids
 
 def add_new_user(users_dict, user_id: int):
@@ -35,7 +46,7 @@ def add_new_user(users_dict, user_id: int):
                                "games" : 0,
                                "wins": 0}
 
-@dp.message(Command(commands="admin") and IsAdmin(admins))
+@dp.message(Command(commands="admin"), IsAdmin(admins))
 async def process_admin_command(message: Message):
     await message.answer("Hi, admin")
 
